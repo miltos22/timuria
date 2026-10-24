@@ -45,11 +45,8 @@ const howName = $('howName');
 const howRule = $('howRule');
 const pieceStrip = $('pieceStrip');
 const soundBtn = $('soundBtn');
-const tabMoves = $('tabMoves');
-const tabChat = $('tabChat');
-const tabDot = $('tabDot');
-const paneMoves = $('paneMoves');
-const paneChat = $('paneChat');
+const chatBtn = $('chatBtn');
+const chatPanel = $('chatPanel');
 const chatLog = $('chatLog');
 const chatInput = $('chatInput');
 const chatSend = $('chatSend');
@@ -88,7 +85,7 @@ let hbTimer = null;
 let uiTimer = null;
 let lastResync = 0;
 let drawerOpen = false;
-let drawerTab = 'moves';
+let chatOpen = true;
 let chatMsgs = [];
 let chatUnread = false;
 let soundOn = localStorage.getItem('timuria_sound') !== '0';
@@ -814,6 +811,7 @@ async function createRoom() {
   myColor = 'w';
   flipped = false;
   started = true;
+  chatOpen = true;
   roomCode = code;
   names = { host: nm, guest: '' };
   game = new Game();
@@ -854,6 +852,7 @@ async function startGuest(rawCode) {
   myColor = 'b';
   hostColor = 'w';
   started = true;
+  chatOpen = true;
   if (!flipped) { flipped = true; buildBoard(); }
   game = new Game();
   clearChat();
@@ -891,6 +890,7 @@ async function resumeHost() {
   try { client = await connectBroker(codeBroker(d.code), mqttOverride); }
   catch { setSheetMsg('Could not reach the room. Try again.'); return; }
   mode = 'host';
+  chatOpen = true;
   roomCode = d.code;
   hostColor = d.hostColor || 'w';
   myColor = hostColor;
@@ -1285,24 +1285,14 @@ function renderChat() {
 }
 
 function updateChatDots() {
-  movesBtn.classList.toggle('has-dot', chatUnread && !drawerOpen);
-  tabDot.hidden = !(chatUnread && drawerOpen && drawerTab !== 'chat');
-}
-
-function selectDrawerTab(tab) {
-  drawerTab = tab;
-  tabMoves.classList.toggle('active', tab === 'moves');
-  tabChat.classList.toggle('active', tab === 'chat');
-  paneMoves.hidden = tab !== 'moves';
-  paneChat.hidden = tab !== 'chat';
-  if (tab === 'chat') { chatUnread = false; renderChat(); }
-  updateChatDots();
+  chatBtn.classList.toggle('has-dot', chatUnread && !chatOpen);
 }
 
 function updateChatState() {
   const online = mode === 'host' || mode === 'guest';
-  tabChat.hidden = !online;
-  if (!online && drawerTab === 'chat') selectDrawerTab('moves');
+  chatBtn.hidden = !online;
+  chatPanel.hidden = !online || !chatOpen;
+  app.classList.toggle('chat-open', online && chatOpen);
   const can = online && connected;
   chatInput.disabled = !can;
   chatSend.disabled = !can;
@@ -1311,26 +1301,21 @@ function updateChatState() {
 }
 
 function openDrawer() {
-  const unread = chatUnread;
   drawerOpen = true;
   drawerEl.hidden = false;
-  chatUnread = false;
-  selectDrawerTab(unread && (mode === 'host' || mode === 'guest') ? 'chat' : 'moves');
   renderDrawer();
-  updateChatState();
 }
 
 function closeDrawer() {
   drawerOpen = false;
   drawerEl.hidden = true;
-  updateChatDots();
 }
 
 function addChat(side, name, text) {
   chatMsgs.push({ side, name: sanitizeName(name) || (side === 'host' ? 'Host' : 'Guest'), text });
   if (chatMsgs.length > 200) chatMsgs.shift();
-  if (drawerOpen && drawerTab === 'chat') renderChat();
-  if (side !== mySide() && (!drawerOpen || drawerTab !== 'chat')) {
+  if (chatOpen && (mode === 'host' || mode === 'guest')) renderChat();
+  if (side !== mySide() && !chatOpen) {
     chatUnread = true;
     updateChatDots();
   }
@@ -1352,7 +1337,7 @@ function sendChat() {
 function clearChat() {
   chatMsgs = [];
   chatUnread = false;
-  if (drawerTab === 'chat') renderChat();
+  renderChat();
   updateChatDots();
 }
 
@@ -1551,8 +1536,12 @@ $('playBtn').addEventListener('click', () => { setSheetMsg(''); setPassRow(false
 $('menuBtn').addEventListener('click', e => { e.stopPropagation(); menuEl.hidden = !menuEl.hidden; });
 $('movesBtn').addEventListener('click', () => { if (drawerOpen) closeDrawer(); else openDrawer(); });
 $('drawerClose').addEventListener('click', closeDrawer);
-$('tabMoves').addEventListener('click', () => selectDrawerTab('moves'));
-$('tabChat').addEventListener('click', () => selectDrawerTab('chat'));
+$('chatBtn').addEventListener('click', () => {
+  chatOpen = !chatOpen;
+  if (chatOpen) chatUnread = false;
+  updateChatState();
+  renderChat();
+});
 $('chatSend').addEventListener('click', sendChat);
 $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 $('soundBtn').addEventListener('click', () => {

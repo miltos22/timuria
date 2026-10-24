@@ -7,14 +7,17 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Timuria</title>
 <link rel="icon" href="assets/pieces/king_white.webp">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 <main id="app">
+  <div id="layout">
+  <div id="mainCol">
   <div id="topbar">
     <button id="playBtn" class="play-btn" type="button">Play</button>
     <button id="howBtn" class="how-btn" type="button">How to play</button>
     <div id="status" class="status" hidden></div>
+    <button id="chatBtn" class="chat-btn" type="button" aria-label="Toggle chat" hidden>Chat</button>
     <button id="movesBtn" class="icon-btn" type="button" aria-label="Moves" hidden>&#9776;</button>
     <button id="menuBtn" class="icon-btn" type="button" aria-label="Menu" hidden>&#8943;</button>
     <div id="menu" class="menu" hidden>
@@ -34,22 +37,9 @@
         <span>Game</span>
         <button id="drawerClose" class="sheet-close" type="button" aria-label="Close">&times;</button>
       </div>
-      <div class="drawer-tabs">
-        <button id="tabMoves" class="tab active" type="button">Moves</button>
-        <button id="tabChat" class="tab" type="button">Chat<span id="tabDot" class="tab-dot" hidden></span></button>
-      </div>
-      <div id="paneMoves" class="drawer-pane">
-        <p id="playersLine" class="players-line"></p>
-        <div id="captured" class="captured"></div>
-        <div id="moveList" class="move-list"></div>
-      </div>
-      <div id="paneChat" class="drawer-pane" hidden>
-        <div id="chatLog" class="chat-log"></div>
-        <div class="chat-row">
-          <input id="chatInput" maxlength="240" autocomplete="off" placeholder="Message">
-          <button id="chatSend" class="btn" type="button">Send</button>
-        </div>
-      </div>
+      <p id="playersLine" class="players-line"></p>
+      <div id="captured" class="captured"></div>
+      <div id="moveList" class="move-list"></div>
       <div class="drawer-foot">
         <button id="soundBtn" class="btn" type="button">Sound: On</button>
         <button id="fullBtn" class="btn" type="button">Fullscreen</button>
@@ -71,6 +61,16 @@
         </div>
       </div>
     </div>
+  </div>
+  </div>
+  <aside id="chatPanel" class="chat-panel" hidden>
+    <div class="chat-panel-head">Chat</div>
+    <div id="chatLog" class="chat-log"></div>
+    <div class="chat-row">
+      <input id="chatInput" maxlength="240" autocomplete="off" placeholder="Message">
+      <button id="chatSend" class="btn" type="button">Send</button>
+    </div>
+  </aside>
   </div>
   <div id="sheet" class="sheet" hidden>
     <div class="sheet-card">
@@ -142,6 +142,6 @@
   </div>
 </main>
 <script src="vendor/mqtt.min.js"></script>
-<script type="module" src="js/app.js?v=6"></script>
+<script type="module" src="js/app.js?v=7"></script>
 </body>
 </html>
