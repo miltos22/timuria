@@ -713,3 +713,26 @@ body::after {
   background: var(--gold-bright);
   border: 1px solid var(--ink);
 }
+
+.lobby-box { margin: 2px 0 8px; }
+.lobby-list { display: flex; flex-direction: column; gap: 5px; max-height: 168px; overflow-y: auto; }
+.lobby-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 8px;
+  background: rgba(212,175,55,0.06);
+  color: var(--ivory);
+  cursor: pointer;
+  text-align: left;
+  font: 12px/1.3 Georgia, serif;
+}
+.lobby-row:hover { background: rgba(212,175,55,0.14); }
+.lobby-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lobby-left strong { color: var(--gold-bright); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lobby-left small { color: rgba(239,227,198,0.55); font-size: 11px; }
+.lobby-join { flex: none; color: var(--gold-bright); font-weight: 700; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }

@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Timuria</title>
 <link rel="icon" href="assets/pieces/king_white.webp">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 <main id="app">
@@ -87,6 +87,11 @@
           <button id="passBtn" class="btn" type="button">Enter</button>
         </div>
         <p id="sheetMsg" class="msg"></p>
+        <div class="lobby-box">
+          <p class="label">Open games</p>
+          <div id="lobbyList" class="lobby-list"></div>
+          <p id="lobbyMsg" class="msg"></p>
+        </div>
         <button id="howBtn" class="btn wide" type="button">How pieces move</button>
         <button id="resumeBtn" class="btn wide" type="button" hidden>Resume last room</button>
         <div id="recentBox" hidden>
@@ -124,6 +129,6 @@
   </div>
 </main>
 <script src="vendor/mqtt.min.js"></script>
-<script type="module" src="js/app.js?v=3"></script>
+<script type="module" src="js/app.js?v=4"></script>
 </body>
 </html>

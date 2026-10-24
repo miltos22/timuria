@@ -44,6 +44,8 @@ const howName = $('howName');
 const howRule = $('howRule');
 const pieceStrip = $('pieceStrip');
 const soundBtn = $('soundBtn');
+const lobbyList = $('lobbyList');
+const lobbyMsg = $('lobbyMsg');
 
 const myId = sessionStorage.getItem('timuria_id') || (() => {
   const id = 'P' + randId(10);
@@ -86,6 +88,15 @@ let names = { host: '', guest: '' };
 let recent = [];
 let timer = { on: false, baseMin: 10, incSec: 5, clock: { w: 0, b: 0 }, started: false, turnStart: 0 };
 let savedHost = null;
+let lobbyClient = null;
+let lobbyTimer = null;
+let lobbySeq = 0;
+let lobbyReady = false;
+let lobbyError = '';
+let hostLobbyClient = null;
+let hostLobbyTimer = null;
+const lobbyRooms = new Map();
+const LOBBY_TOPIC = 'timuria/v1/lobby';
 let actx = null;
 let demoType = 'N';
 let demoBlocked = false;
@@ -425,6 +436,7 @@ function acceptGuest(msg) {
   hideSheet();
   net.send(welcomeMsg(guestSecret));
   saveHost();
+  announceLobby();
   render();
 }
 
@@ -626,6 +638,7 @@ function startHeartbeat() {
 }
 
 function cleanupNet() {
+  stopHostLobby(true);
   clearInterval(hbTimer);
   clearInterval(uiTimer);
   clearTimeout(pendingTimer);
@@ -664,6 +677,7 @@ function resetToIdle() {
 }
 
 function startLocal() {
+  closeLobby();
   cleanupNet();
   mode = 'local';
   myColor = 'both';
@@ -755,6 +769,7 @@ async function createRoom() {
   if (!cfg) { setSheetMsg('Clock: base 1-180 min, increment 0-900 s.'); return; }
   const pass = passInput.value.trim();
   roomPassHash = pass ? await sha256Hex(pass) : '';
+  closeLobby();
   cleanupNet();
   setSheetMsg('Connecting to server\u2026');
   let client = null;
@@ -789,6 +804,7 @@ async function createRoom() {
   waitBox.hidden = false;
   passInput.value = '';
   saveHost();
+  startHostLobby();
 }
 
 async function sendJoin(pass) {
@@ -799,14 +815,15 @@ async function sendJoin(pass) {
 async function startGuest(rawCode) {
   const code = String(rawCode || '').trim().toUpperCase();
   if (!isValidCode(code)) { setSheetMsg('Enter a valid 13-character room code.'); openSheet(); return; }
-  if (!readName()) return;
+  codeInput.value = code;
+  pendingJoinCode = code;
+  if (!readName()) { openSheet(); return; }
+  closeLobby();
   cleanupNet();
   mode = 'guest';
   myColor = 'b';
   hostColor = 'w';
   started = true;
-  pendingJoinCode = code;
-  codeInput.value = code;
   if (!flipped) { flipped = true; buildBoard(); }
   game = new Game();
   selected = null;
@@ -838,6 +855,7 @@ async function resumeHost() {
   if (!d) return;
   cleanupNet();
   setSheetMsg('Reconnecting\u2026');
+  closeLobby();
   let client;
   try { client = await connectBroker(codeBroker(d.code), mqttOverride); }
   catch { setSheetMsg('Could not reach the room. Try again.'); return; }
@@ -877,6 +895,7 @@ async function resumeHost() {
   waitBox.hidden = false;
   net.send({ t: 'host-ready', v: 2 });
   saveHost();
+  startHostLobby();
 }
 
 function hostRematch() {
@@ -953,7 +972,137 @@ function openSheet() {
   resumeBtn.hidden = !savedHost;
 }
 
-function hideSheet() { sheetEl.hidden = true; }
+function hideSheet() { sheetEl.hidden = true; closeLobby(); }
+
+function renderLobby() {
+  if (!lobbyList || !lobbyMsg) return;
+  lobbyList.textContent = '';
+  if (lobbyError) { lobbyMsg.textContent = lobbyError; return; }
+  if (!lobbyReady) { lobbyMsg.textContent = lobbyClient ? 'Looking for open games\u2026' : ''; return; }
+  const rooms = [...lobbyRooms.values()].filter(r => !r.full).sort((a, b) => b.at - a.at).slice(0, 20);
+  if (!rooms.length) { lobbyMsg.textContent = 'No open games right now.'; return; }
+  lobbyMsg.textContent = '';
+  for (const r of rooms) {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'lobby-row';
+    const left = document.createElement('span');
+    left.className = 'lobby-left';
+    const nm = document.createElement('strong');
+    nm.textContent = r.host || 'Host';
+    const meta = document.createElement('small');
+    const cfg = r.timed ? `${r.baseMin} min + ${r.incSec} s` : 'No clock';
+    meta.textContent = cfg + (r.pass ? ' \u00b7 password' : '');
+    left.append(nm, meta);
+    const join = document.createElement('span');
+    join.className = 'lobby-join';
+    join.textContent = 'Join';
+    row.append(left, join);
+    row.addEventListener('click', () => { closeLobby(); startGuest(r.code); });
+    lobbyList.appendChild(row);
+  }
+}
+
+async function openLobby() {
+  if (lobbyClient) return;
+  const seq = ++lobbySeq;
+  lobbyReady = false;
+  lobbyError = '';
+  renderLobby();
+  let c;
+  try { c = await connectBroker(0, mqttOverride); }
+  catch { if (seq === lobbySeq) { lobbyError = 'Open games unavailable. Use a code or invite link.'; renderLobby(); } return; }
+  if (seq !== lobbySeq) { try { c.end(true); } catch {} return; }
+  lobbyClient = c;
+  c.on('error', () => {});
+  c.on('message', (topic, payload) => {
+    if (topic !== LOBBY_TOPIC) return;
+    let m;
+    try { m = JSON.parse(payload.toString()); } catch { return; }
+    if (m.t === 'room' && isValidCode(m.code)) {
+      if (m.full) lobbyRooms.delete(m.code);
+      else {
+        lobbyRooms.set(m.code, {
+          code: m.code,
+          host: sanitizeName(m.host) || 'Host',
+          timed: !!m.timed,
+          baseMin: Math.min(180, Math.max(1, Number(m.baseMin) || 10)),
+          incSec: Math.min(900, Math.max(0, Number(m.incSec) || 0)),
+          pass: !!m.pass,
+          at: Date.now()
+        });
+      }
+      renderLobby();
+    } else if (m.t === 'room-close' && isValidCode(m.code)) {
+      lobbyRooms.delete(m.code);
+      renderLobby();
+    }
+  });
+  c.on('connect', () => { c.subscribe(LOBBY_TOPIC, { qos: 0 }, () => {}); });
+  c.subscribe(LOBBY_TOPIC, { qos: 0 }, err => {
+    if (err) lobbyError = 'Open games unavailable. Use a code or invite link.';
+    else lobbyReady = true;
+    renderLobby();
+  });
+  clearInterval(lobbyTimer);
+  lobbyTimer = setInterval(() => {
+    const now = Date.now();
+    let changed = false;
+    for (const [k, v] of lobbyRooms) {
+      if (now - v.at > 12000) { lobbyRooms.delete(k); changed = true; }
+    }
+    if (changed) renderLobby();
+  }, 2000);
+  renderLobby();
+}
+
+function closeLobby() {
+  lobbySeq++;
+  clearInterval(lobbyTimer);
+  lobbyTimer = null;
+  if (lobbyClient) { try { lobbyClient.end(true); } catch {} }
+  lobbyClient = null;
+  lobbyReady = false;
+  lobbyError = '';
+  lobbyRooms.clear();
+  renderLobby();
+}
+
+function announceLobby() {
+  if (!hostLobbyClient || mode !== 'host' || !roomCode) return;
+  const full = connected && Date.now() - guestSeen < 20000;
+  hostLobbyClient.publish(LOBBY_TOPIC, JSON.stringify({
+    t: 'room', v: 2, code: roomCode, host: names.host || playerName,
+    timed: timer.on, baseMin: timer.baseMin, incSec: timer.incSec,
+    pass: !!roomPassHash, full
+  }), { qos: 0 });
+}
+
+async function startHostLobby() {
+  stopHostLobby(false);
+  const code = roomCode;
+  if (!code) return;
+  let c;
+  try { c = await connectBroker(0, mqttOverride); } catch { return; }
+  if (mode !== 'host' || roomCode !== code) { try { c.end(true); } catch {} return; }
+  c.on('error', () => {});
+  hostLobbyClient = c;
+  announceLobby();
+  clearInterval(hostLobbyTimer);
+  hostLobbyTimer = setInterval(announceLobby, 4000);
+}
+
+function stopHostLobby(close) {
+  clearInterval(hostLobbyTimer);
+  hostLobbyTimer = null;
+  if (hostLobbyClient) {
+    if (close && roomCode) {
+      try { hostLobbyClient.publish(LOBBY_TOPIC, JSON.stringify({ t: 'room-close', v: 2, code: roomCode }), { qos: 0 }); } catch {}
+    }
+    try { hostLobbyClient.end(true); } catch {}
+  }
+  hostLobbyClient = null;
+}
 
 function cancelCreate() {
   if (mode === 'host') clearHostSave();
@@ -1173,6 +1322,7 @@ function buildPieceStrip() {
 
 function openHowto() {
   howReturn = !sheetEl.hidden;
+  closeLobby();
   sheetEl.hidden = true;
   howtoEl.hidden = false;
   demoStart = performance.now();
@@ -1265,7 +1415,7 @@ $('rematchBtn').addEventListener('click', () => {
   }
 });
 $('closeOverBtn').addEventListener('click', hideOverlay);
-$('playBtn').addEventListener('click', () => { setSheetMsg(''); setPassRow(false); openSheet(); });
+$('playBtn').addEventListener('click', () => { setSheetMsg(''); setPassRow(false); openSheet(); openLobby(); });
 $('menuBtn').addEventListener('click', e => { e.stopPropagation(); menuEl.hidden = !menuEl.hidden; });
 $('movesBtn').addEventListener('click', () => {
   drawerOpen = !drawerOpen;
