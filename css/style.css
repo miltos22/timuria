@@ -87,6 +87,20 @@ body::after {
   flex: none;
 }
 
+.how-btn {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(212,175,55,0.55);
+  background: rgba(36,17,24,0.85);
+  color: var(--gold-bright);
+  font: 600 11px/1 Georgia, serif;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  flex: none;
+}
+.how-btn:hover { background: rgba(212,175,55,0.14); }
+
 .play-btn:hover { filter: brightness(1.06); }
 .play-btn:active { transform: translateY(1px); }
 
@@ -496,6 +510,7 @@ body::after {
   #app { padding: 4px; gap: 6px; }
   #topbar { height: 36px; }
   .play-btn { height: 30px; padding: 0 16px; font-size: 11px; }
+  .how-btn { height: 30px; padding: 0 10px; font-size: 10px; }
   .status { height: 26px; font-size: 11px; padding: 0 10px; }
   .icon-btn { width: 28px; height: 28px; font-size: 16px; }
   .board { gap: 2px; padding: 6px; border-width: 13px; }
@@ -715,7 +730,19 @@ body::after {
 }
 
 .lobby-box { margin: 2px 0 8px; }
-.lobby-list { display: flex; flex-direction: column; gap: 5px; max-height: 168px; overflow-y: auto; }
+.lobby-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 168px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212,175,55,0.4) transparent;
+}
+.lobby-list::-webkit-scrollbar { width: 6px; }
+.lobby-list::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.35); border-radius: 3px; }
 .lobby-row {
   display: flex;
   align-items: center;

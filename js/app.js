@@ -5,6 +5,7 @@ const $ = id => document.getElementById(id);
 const app = $('app');
 const boardEl = $('board');
 const playBtn = $('playBtn');
+const howBtn = $('howBtn');
 const statusEl = $('status');
 const movesBtn = $('movesBtn');
 const menuBtn = $('menuBtn');
@@ -188,6 +189,7 @@ function render() {
 
 function updateHud() {
   playBtn.hidden = mode === 'host' || mode === 'guest';
+  howBtn.hidden = mode === 'host' || mode === 'guest';
   movesBtn.hidden = !started;
   menuBtn.hidden = !(mode === 'host' || mode === 'guest');
   if (mode === 'idle') {
@@ -1134,8 +1136,6 @@ function inviteLink() {
 
 function syncTimerInputs(onEl, baseEl, incEl) {
   const off = !onEl.checked;
-  baseEl.disabled = off;
-  incEl.disabled = off;
   baseEl.parentElement.classList.toggle('dim', off);
   incEl.parentElement.classList.toggle('dim', off);
 }

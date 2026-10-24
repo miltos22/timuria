@@ -7,12 +7,13 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Timuria</title>
 <link rel="icon" href="assets/pieces/king_white.webp">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 <main id="app">
   <div id="topbar">
     <button id="playBtn" class="play-btn" type="button">Play</button>
+    <button id="howBtn" class="how-btn" type="button">How to play</button>
     <div id="status" class="status" hidden></div>
     <button id="movesBtn" class="icon-btn" type="button" aria-label="Moves" hidden>&#9776;</button>
     <button id="menuBtn" class="icon-btn" type="button" aria-label="Menu" hidden>&#8943;</button>
@@ -92,7 +93,6 @@
           <div id="lobbyList" class="lobby-list"></div>
           <p id="lobbyMsg" class="msg"></p>
         </div>
-        <button id="howBtn" class="btn wide" type="button">How pieces move</button>
         <button id="resumeBtn" class="btn wide" type="button" hidden>Resume last room</button>
         <div id="recentBox" hidden>
           <p class="label">Recent players</p>
@@ -129,6 +129,6 @@
   </div>
 </main>
 <script src="vendor/mqtt.min.js"></script>
-<script type="module" src="js/app.js?v=4"></script>
+<script type="module" src="js/app.js?v=5"></script>
 </body>
 </html>
