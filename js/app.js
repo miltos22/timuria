@@ -806,10 +806,11 @@ async function createRoom() {
   if (!client) { setSheetMsg('Could not reach the game server. Try again.'); return; }
   const code = makeCode(index);
   try { await openRoom(code, 'host', client); } catch { setSheetMsg('Could not open the room. Try again.'); return; }
+  const chosen = document.querySelector('input[name="hostColor"]:checked')?.value === 'b' ? 'b' : 'w';
   mode = 'host';
-  hostColor = 'w';
-  myColor = 'w';
-  flipped = false;
+  hostColor = chosen;
+  myColor = chosen;
+  flipped = chosen === 'b';
   started = true;
   chatOpen = true;
   roomCode = code;
@@ -826,7 +827,7 @@ async function createRoom() {
   render();
   roomCodeEl.textContent = code;
   waitMsg.textContent = 'Waiting for your opponent\u2026';
-  waitCfg.textContent = (cfg.on ? `Clock: ${cfg.baseMin} min + ${cfg.incSec} s per move` : 'No clock') + (roomPassHash ? ' \u00b7 password required' : '');
+  waitCfg.textContent = (cfg.on ? `Clock: ${cfg.baseMin} min + ${cfg.incSec} s per move` : 'No clock') + (roomPassHash ? ' \u00b7 password required' : '') + ` \u00b7 you play ${chosen === 'w' ? 'White' : 'Gold'}`;
   sheetEl.hidden = false;
   sheetMain.hidden = true;
   waitBox.hidden = false;
@@ -921,7 +922,7 @@ async function resumeHost() {
   catch { setSheetMsg('Could not reconnect. Try again.'); return; }
   roomCodeEl.textContent = d.code;
   waitMsg.textContent = 'Waiting for your opponent to rejoin\u2026';
-  waitCfg.textContent = (timer.on ? `Clock: ${timer.baseMin} min + ${timer.incSec} s per move` : 'No clock') + (roomPassHash ? ' \u00b7 password required' : '');
+  waitCfg.textContent = (timer.on ? `Clock: ${timer.baseMin} min + ${timer.incSec} s per move` : 'No clock') + (roomPassHash ? ' \u00b7 password required' : '') + ` \u00b7 you play ${hostColor === 'w' ? 'White' : 'Gold'}`;
   sheetEl.hidden = false;
   sheetMain.hidden = true;
   waitBox.hidden = false;
@@ -1024,7 +1025,7 @@ function renderLobby() {
     nm.textContent = r.host || 'Host';
     const meta = document.createElement('small');
     const cfg = r.timed ? `${r.baseMin} min + ${r.incSec} s` : 'No clock';
-    meta.textContent = cfg + (r.pass ? ' \u00b7 password' : '');
+    meta.textContent = cfg + (r.pass ? ' \u00b7 password' : '') + ` \u00b7 you are ${r.hostColor === 'w' ? 'Gold' : 'White'}`;
     left.append(nm, meta);
     const join = document.createElement('span');
     join.className = 'lobby-join';
@@ -1061,6 +1062,7 @@ async function openLobby() {
           baseMin: Math.min(180, Math.max(1, Number(m.baseMin) || 10)),
           incSec: Math.min(900, Math.max(0, Number(m.incSec) || 0)),
           pass: !!m.pass,
+          hostColor: m.hostColor === 'b' ? 'b' : 'w',
           at: Date.now()
         });
       }
@@ -1106,7 +1108,7 @@ function announceLobby() {
   hostLobbyClient.publish(LOBBY_TOPIC, JSON.stringify({
     t: 'room', v: 2, code: roomCode, host: names.host || playerName,
     timed: timer.on, baseMin: timer.baseMin, incSec: timer.incSec,
-    pass: !!roomPassHash, full
+    pass: !!roomPassHash, hostColor, full
   }), { qos: 0 });
 }
 

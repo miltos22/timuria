@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Timuria</title>
 <link rel="icon" href="assets/pieces/king_white.webp">
-<link rel="stylesheet" href="css/style.css?v=7">
+<link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
 <main id="app">
@@ -83,6 +83,11 @@
         <button id="localBtn" class="btn gold wide" type="button">Play on this device</button>
         <div class="sep"></div>
         <button id="createBtn" class="btn gold wide" type="button">Create online game</button>
+        <div class="color-choice">
+          <span>Play as</span>
+          <label class="chk"><input type="radio" name="hostColor" value="w" checked> White</label>
+          <label class="chk"><input type="radio" name="hostColor" value="b"> Gold</label>
+        </div>
         <label class="field">Room password (optional)
           <input id="passInput" type="password" maxlength="32" autocomplete="new-password" placeholder="Leave empty for none">
         </label>
@@ -142,6 +147,6 @@
   </div>
 </main>
 <script src="vendor/mqtt.min.js"></script>
-<script type="module" src="js/app.js?v=7"></script>
+<script type="module" src="js/app.js?v=8"></script>
 </body>
 </html>
