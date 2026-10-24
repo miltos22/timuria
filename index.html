@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Timuria</title>
 <link rel="icon" href="assets/pieces/king_white.webp">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 <main id="app">
@@ -34,9 +34,22 @@
         <span>Game</span>
         <button id="drawerClose" class="sheet-close" type="button" aria-label="Close">&times;</button>
       </div>
-      <p id="playersLine" class="players-line"></p>
-      <div id="captured" class="captured"></div>
-      <div id="moveList" class="move-list"></div>
+      <div class="drawer-tabs">
+        <button id="tabMoves" class="tab active" type="button">Moves</button>
+        <button id="tabChat" class="tab" type="button">Chat<span id="tabDot" class="tab-dot" hidden></span></button>
+      </div>
+      <div id="paneMoves" class="drawer-pane">
+        <p id="playersLine" class="players-line"></p>
+        <div id="captured" class="captured"></div>
+        <div id="moveList" class="move-list"></div>
+      </div>
+      <div id="paneChat" class="drawer-pane" hidden>
+        <div id="chatLog" class="chat-log"></div>
+        <div class="chat-row">
+          <input id="chatInput" maxlength="240" autocomplete="off" placeholder="Message">
+          <button id="chatSend" class="btn" type="button">Send</button>
+        </div>
+      </div>
       <div class="drawer-foot">
         <button id="soundBtn" class="btn" type="button">Sound: On</button>
         <button id="fullBtn" class="btn" type="button">Fullscreen</button>
@@ -129,6 +142,6 @@
   </div>
 </main>
 <script src="vendor/mqtt.min.js"></script>
-<script type="module" src="js/app.js?v=5"></script>
+<script type="module" src="js/app.js?v=6"></script>
 </body>
 </html>

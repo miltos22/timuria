@@ -45,6 +45,14 @@ const howName = $('howName');
 const howRule = $('howRule');
 const pieceStrip = $('pieceStrip');
 const soundBtn = $('soundBtn');
+const tabMoves = $('tabMoves');
+const tabChat = $('tabChat');
+const tabDot = $('tabDot');
+const paneMoves = $('paneMoves');
+const paneChat = $('paneChat');
+const chatLog = $('chatLog');
+const chatInput = $('chatInput');
+const chatSend = $('chatSend');
 const lobbyList = $('lobbyList');
 const lobbyMsg = $('lobbyMsg');
 
@@ -80,6 +88,9 @@ let hbTimer = null;
 let uiTimer = null;
 let lastResync = 0;
 let drawerOpen = false;
+let drawerTab = 'moves';
+let chatMsgs = [];
+let chatUnread = false;
 let soundOn = localStorage.getItem('timuria_sound') !== '0';
 let roomPassHash = '';
 let guestPassHash = '';
@@ -188,6 +199,7 @@ function render() {
 }
 
 function updateHud() {
+  updateChatState();
   playBtn.hidden = mode === 'host' || mode === 'guest';
   howBtn.hidden = mode === 'host' || mode === 'guest';
   movesBtn.hidden = !started;
@@ -459,6 +471,12 @@ function hostHandle(msg) {
     saveHost();
     return;
   }
+  if (msg.t === 'chat') {
+    if (msg.id !== guestId || msg.secret !== guestSecret) return;
+    const text = sanitizeChat(msg.text);
+    if (text) addChat('guest', names.guest || 'Guest', text);
+    return;
+  }
   if (msg.t === 'hb') {
     if (msg.id === guestId) guestSeen = Date.now();
     return;
@@ -593,6 +611,13 @@ function guestHandle(msg) {
     render();
     return;
   }
+  if (msg.t === 'chat') {
+    if (msg.to && msg.to !== myId) return;
+    if (msg.from !== 'host') return;
+    const text = sanitizeChat(msg.text);
+    if (text) addChat('host', names.host || 'Host', text);
+    return;
+  }
   if (msg.t === 'hb') {
     if (msg.role === 'host') hostSeen = Date.now();
     if (typeof msg.seq === 'number' && msg.seq > game.history.length) requestSync();
@@ -671,6 +696,7 @@ function resetToIdle() {
   lastMove = null;
   names = { host: '', guest: '' };
   timer = { on: false, baseMin: 10, incSec: 5, clock: { w: 0, b: 0 }, started: false, turnStart: 0 };
+  clearChat();
   hideOverlay();
   drawerOpen = false;
   drawerEl.hidden = true;
@@ -690,6 +716,7 @@ function startLocal() {
   legal = [];
   lastMove = null;
   names = { host: playerName || 'You', guest: 'Friend' };
+  clearChat();
   timer.on = false;
   hideOverlay();
   hideSheet();
@@ -790,6 +817,7 @@ async function createRoom() {
   roomCode = code;
   names = { host: nm, guest: '' };
   game = new Game();
+  clearChat();
   selected = null;
   legal = [];
   lastMove = null;
@@ -828,6 +856,7 @@ async function startGuest(rawCode) {
   started = true;
   if (!flipped) { flipped = true; buildBoard(); }
   game = new Game();
+  clearChat();
   selected = null;
   legal = [];
   lastMove = null;
@@ -878,6 +907,7 @@ async function resumeHost() {
   if (!g) { setSheetMsg('Saved game is damaged.'); return; }
   game = g;
   if (d.result) game.result = d.result;
+  clearChat();
   lastMove = d.moves && d.moves.length ? unpackMove(d.moves[d.moves.length - 1]) : null;
   started = true;
   connected = false;
@@ -1224,6 +1254,108 @@ function sq(f, r) {
   return 'abcdefghijk'[f] + (r + 1);
 }
 
+function mySide() { return mode === 'host' ? 'host' : mode === 'guest' ? 'guest' : null; }
+
+function sanitizeChat(t) {
+  return String(t || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 240);
+}
+
+function renderChat() {
+  chatLog.textContent = '';
+  if (!chatMsgs.length) {
+    const e = document.createElement('div');
+    e.className = 'chat-empty';
+    e.textContent = 'No messages yet.';
+    chatLog.appendChild(e);
+    return;
+  }
+  for (const m of chatMsgs) {
+    const row = document.createElement('div');
+    row.className = 'chat-msg ' + m.side;
+    const who = document.createElement('span');
+    who.className = 'chat-who';
+    who.textContent = m.name + ':';
+    const txt = document.createElement('span');
+    txt.className = 'chat-text';
+    txt.textContent = m.text;
+    row.append(who, txt);
+    chatLog.appendChild(row);
+  }
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function updateChatDots() {
+  movesBtn.classList.toggle('has-dot', chatUnread && !drawerOpen);
+  tabDot.hidden = !(chatUnread && drawerOpen && drawerTab !== 'chat');
+}
+
+function selectDrawerTab(tab) {
+  drawerTab = tab;
+  tabMoves.classList.toggle('active', tab === 'moves');
+  tabChat.classList.toggle('active', tab === 'chat');
+  paneMoves.hidden = tab !== 'moves';
+  paneChat.hidden = tab !== 'chat';
+  if (tab === 'chat') { chatUnread = false; renderChat(); }
+  updateChatDots();
+}
+
+function updateChatState() {
+  const online = mode === 'host' || mode === 'guest';
+  tabChat.hidden = !online;
+  if (!online && drawerTab === 'chat') selectDrawerTab('moves');
+  const can = online && connected;
+  chatInput.disabled = !can;
+  chatSend.disabled = !can;
+  chatInput.placeholder = can ? 'Message' : (online ? 'Waiting for opponent\u2026' : 'Message');
+  updateChatDots();
+}
+
+function openDrawer() {
+  const unread = chatUnread;
+  drawerOpen = true;
+  drawerEl.hidden = false;
+  chatUnread = false;
+  selectDrawerTab(unread && (mode === 'host' || mode === 'guest') ? 'chat' : 'moves');
+  renderDrawer();
+  updateChatState();
+}
+
+function closeDrawer() {
+  drawerOpen = false;
+  drawerEl.hidden = true;
+  updateChatDots();
+}
+
+function addChat(side, name, text) {
+  chatMsgs.push({ side, name: sanitizeName(name) || (side === 'host' ? 'Host' : 'Guest'), text });
+  if (chatMsgs.length > 200) chatMsgs.shift();
+  if (drawerOpen && drawerTab === 'chat') renderChat();
+  if (side !== mySide() && (!drawerOpen || drawerTab !== 'chat')) {
+    chatUnread = true;
+    updateChatDots();
+  }
+}
+
+function sendChat() {
+  const text = sanitizeChat(chatInput.value);
+  if (!text) return;
+  chatInput.value = '';
+  if (mode === 'host') {
+    addChat('host', names.host || playerName || 'Host', text);
+    if (net && guestId) net.send({ t: 'chat', v: 2, to: guestId, from: 'host', text });
+  } else if (mode === 'guest') {
+    addChat('guest', names.guest || playerName || 'You', text);
+    if (net) net.send({ t: 'chat', v: 2, id: myId, secret: guestSecret, text });
+  }
+}
+
+function clearChat() {
+  chatMsgs = [];
+  chatUnread = false;
+  if (drawerTab === 'chat') renderChat();
+  updateChatDots();
+}
+
 function renderDrawer() {
   if (!drawerOpen) return;
   if (mode === 'local') playersLine.textContent = 'Local game';
@@ -1417,12 +1549,12 @@ $('rematchBtn').addEventListener('click', () => {
 $('closeOverBtn').addEventListener('click', hideOverlay);
 $('playBtn').addEventListener('click', () => { setSheetMsg(''); setPassRow(false); openSheet(); openLobby(); });
 $('menuBtn').addEventListener('click', e => { e.stopPropagation(); menuEl.hidden = !menuEl.hidden; });
-$('movesBtn').addEventListener('click', () => {
-  drawerOpen = !drawerOpen;
-  drawerEl.hidden = !drawerOpen;
-  renderDrawer();
-});
-$('drawerClose').addEventListener('click', () => { drawerOpen = false; drawerEl.hidden = true; });
+$('movesBtn').addEventListener('click', () => { if (drawerOpen) closeDrawer(); else openDrawer(); });
+$('drawerClose').addEventListener('click', closeDrawer);
+$('tabMoves').addEventListener('click', () => selectDrawerTab('moves'));
+$('tabChat').addEventListener('click', () => selectDrawerTab('chat'));
+$('chatSend').addEventListener('click', sendChat);
+$('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 $('soundBtn').addEventListener('click', () => {
   soundOn = !soundOn;
   localStorage.setItem('timuria_sound', soundOn ? '1' : '0');
