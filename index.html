@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b0f14">
+<meta name="robots" content="noindex,nofollow">
+<title>Timuria</title>
+<link rel="icon" href="assets/pieces/king_white.webp">
+<link rel="stylesheet" href="css/style.css?v=3">
+</head>
+<body>
+<main id="app">
+  <div id="topbar">
+    <button id="playBtn" class="play-btn" type="button">Play</button>
+    <div id="status" class="status" hidden></div>
+    <button id="movesBtn" class="icon-btn" type="button" aria-label="Moves" hidden>&#9776;</button>
+    <button id="menuBtn" class="icon-btn" type="button" aria-label="Menu" hidden>&#8943;</button>
+    <div id="menu" class="menu" hidden>
+      <button id="copyMenuBtn" type="button">Copy invite link</button>
+      <button id="resignBtn" type="button">Resign</button>
+      <button id="leaveBtn" type="button">Leave game</button>
+    </div>
+  </div>
+  <div id="clocks" class="clocks" hidden>
+    <div id="clockW" class="clock"><span class="cname"></span><span class="ctime">10:00</span></div>
+    <div id="clockB" class="clock"><span class="cname"></span><span class="ctime">10:00</span></div>
+  </div>
+  <div id="boardWrap">
+    <div id="board" class="board" aria-label="Timuria board"></div>
+    <div id="drawer" class="drawer" hidden>
+      <div class="drawer-head">
+        <span>Game</span>
+        <button id="drawerClose" class="sheet-close" type="button" aria-label="Close">&times;</button>
+      </div>
+      <p id="playersLine" class="players-line"></p>
+      <div id="captured" class="captured"></div>
+      <div id="moveList" class="move-list"></div>
+      <div class="drawer-foot">
+        <button id="soundBtn" class="btn" type="button">Sound: On</button>
+        <button id="fullBtn" class="btn" type="button">Fullscreen</button>
+      </div>
+    </div>
+    <div id="overlay" class="overlay" hidden>
+      <div class="overlay-card">
+        <h2 id="overTitle"></h2>
+        <p id="overSub"></p>
+        <div id="rematchCfg" class="timer-row" hidden>
+          <label class="chk"><input id="rTimerOn" type="checkbox"> Clock</label>
+          <label>Base <input id="rBaseMin" type="number" min="1" max="180" value="10" inputmode="numeric"> min</label>
+          <label>+ <input id="rIncSec" type="number" min="0" max="900" value="5" inputmode="numeric"> s/move</label>
+        </div>
+        <p id="overCfg" class="msg" hidden></p>
+        <div class="over-actions">
+          <button id="rematchBtn" class="btn gold" type="button">Play again</button>
+          <button id="closeOverBtn" class="btn" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="sheet" class="sheet" hidden>
+    <div class="sheet-card">
+      <button id="sheetClose" class="sheet-close" type="button" aria-label="Close">&times;</button>
+      <div id="sheetMain">
+        <h2>Play</h2>
+        <label class="field">Your name
+          <input id="nameInput" maxlength="20" autocomplete="nickname" spellcheck="false" placeholder="Your name">
+        </label>
+        <button id="localBtn" class="btn gold wide" type="button">Play on this device</button>
+        <div class="sep"></div>
+        <button id="createBtn" class="btn gold wide" type="button">Create online game</button>
+        <label class="field">Room password (optional)
+          <input id="passInput" type="password" maxlength="32" autocomplete="new-password" placeholder="Leave empty for none">
+        </label>
+        <div class="timer-row">
+          <label class="chk"><input id="timerOn" type="checkbox"> Clock</label>
+          <label>Base <input id="baseMin" type="number" min="1" max="180" value="10" inputmode="numeric"> min</label>
+          <label>+ <input id="incSec" type="number" min="0" max="900" value="5" inputmode="numeric"> s/move</label>
+        </div>
+        <div class="sep"></div>
+        <div class="join-row">
+          <input id="codeInput" maxlength="13" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Room code">
+          <button id="joinBtn" class="btn" type="button">Join</button>
+        </div>
+        <div id="passRow" class="join-row" hidden>
+          <input id="joinPass" type="password" maxlength="32" autocomplete="current-password" placeholder="Room password">
+          <button id="passBtn" class="btn" type="button">Enter</button>
+        </div>
+        <p id="sheetMsg" class="msg"></p>
+        <button id="howBtn" class="btn wide" type="button">How pieces move</button>
+        <button id="resumeBtn" class="btn wide" type="button" hidden>Resume last room</button>
+        <div id="recentBox" hidden>
+          <p class="label">Recent players</p>
+          <div id="recentList" class="recent"></div>
+        </div>
+      </div>
+      <div id="waitBox" hidden>
+        <p class="label">Room code</p>
+        <div id="roomCode" class="code"></div>
+        <button id="copyLinkBtn" class="btn gold wide" type="button">Copy invite link</button>
+        <p id="waitMsg" class="msg">Waiting for your opponent&hellip;</p>
+        <p id="waitCfg" class="msg"></p>
+        <button id="cancelWaitBtn" class="btn wide" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <div id="howto" class="howto" hidden>
+    <div class="howto-card">
+      <button id="howClose" class="sheet-close" type="button" aria-label="Close">&times;</button>
+      <h2>How pieces move</h2>
+      <div id="pieceStrip" class="piece-strip"></div>
+      <div class="howto-body">
+        <div class="demo-wrap">
+          <div id="demoBoard" class="demo-board"></div>
+          <div id="howCount" class="how-count"></div>
+        </div>
+        <div class="how-text">
+          <h3 id="howName"></h3>
+          <p id="howRule"></p>
+          <p class="how-note">Gold pawns appear around the piece for 5 seconds, then vanish. Watch which moves survive. Leapers jump; sliders and the Scout/Giraffe are blocked.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="vendor/mqtt.min.js"></script>
+<script type="module" src="js/app.js?v=3"></script>
+</body>
+</html>
